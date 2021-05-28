@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    	<!-- head definitions go here -->
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <link rel="stylesheet" href="css/styles.css">
+        <title>Juego</title>
+    </head>
+    <body>
+        <!-- <a href="mesaJuego.html"><button class=selecJugador id="JA">Jugador A</button></a>
+        <a href="mesaJuego.html"><button class=selecJugador id="JB">Jugador B</button></a>
+        <a href="mesaJuego.html"><button class=selecJugador id="JC">Jugador C</button></a>
+        <a href="mesaJuego.html"><button class=selecJugador id="JD">Jugador D</button></a> -->
+        <form method="post" action="/game">
+            <fieldset>
+                <legend>Seleccionar Jugador</legend>
+                <!-- En este campo ocuto se asignará el valor del id del jugador modificandolo en el js -->
+                <!-- Cuando se coloca "name" se crea un nuevo campo en la respuesta
+                que será enviada al servidor, en un JSON, en este caso será user:{id:value} -->
+                <input id="idJugador" name="user[id]" type="hidden" value="waitId">
+                <input class=selecJugador id="MG" type="submit" value="Master Game">
+                <input class=selecJugador id="JA" type="submit" value="Jugador A">
+                <input class=selecJugador id="JB" type="submit" value="Jugador B">
+                <input class=selecJugador id="JC" type="submit" value="Jugador C">
+                <input class=selecJugador id="JD" type="submit" value="Jugador D">
+            </fieldset>
+        </form>
+
+        <script src="/javascripts/playerSelect.js"></script>
+    </body>
+</html>

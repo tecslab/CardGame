@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  
+
+  h1= title
+  p Bienvenidos
+
+
+  form(method="post", action="/game")
+    fieldset
+      legend Seleccionar Jugador
+      input#idJugador(name="user[id]", type="hidden", value="waitId")
+      input.selecJugador#MG(type="submit", value="Master Game")
+      input.selecJugador#JA(type="submit", value="Jugador A")
+      input.selecJugador#JB(type="submit", value="Jugador B")
+      input.selecJugador#JC(type="submit", value="Jugador C")
+      input.selecJugador#JD(type="submit", value="Jugador D")
+
+  script(src="/javascripts/playerSelect.js")
+
+
+  
+
+
+
+  // include no funciona con docker :'(
+  //include includes/playerSelect.html
+
+
+
+  //include includes/footer
