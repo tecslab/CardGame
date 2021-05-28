@@ -1,0 +1,447 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('juego:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+//################################################################################################
+
+var io = require('socket.io').listen(server);
+var mecanicas = require('./mecanicasJuego.js');
+// Inicializamos prevToken en D para comenzar turnos con A
+var prevToken='A';
+var cartaDescarte=mecanicas.pick_random();
+var cartaMazo='';
+var descarteActivo=true;
+
+// Se crean los objetos Jugadores junto con sus cartas
+var player1 = new mecanicas.Jugador("Player1","A");
+var player2 = new mecanicas.Jugador("Player2","B");
+var player3 = new mecanicas.Jugador("Player3","C");
+var player4 = new mecanicas.Jugador("Player4","D");
+
+var Jugadores = {A: player1,
+                 B: player2,
+                 C: player3,
+                 D: player4};
+
+
+//El jugador que tiene el token tiene el turno actual
+function nextToken(prevToken){
+  // Genera un token actualizado
+  if (prevToken=='A'){
+    return 'B';
+  }
+  if (prevToken=='B'){
+    return 'C';
+  }
+  if (prevToken=='C'){
+    return 'D';
+  }
+  if (prevToken=='D'){
+    return 'A';
+  }
+}
+
+
+io.sockets.on('connection', function (socket) {
+  console.log('User connected');
+  //Se envía una peticion de identificacion
+  //también se envía la carta que se mostrará en el descarte
+  socket.emit('identification',{text:'Identificate', cartaDescarte: cartaDescarte});
+  //Se espera la respuesta de la identificación
+  socket.on('message', function(data){
+    console.log(data.id);
+    //var idJugador=data.id
+
+    /////////////////////////////////////////////////////
+    //Funciones de respuesta a Master Game
+
+    if (data.id=='Master_Game'){
+    //Se espera por un comando del Master Game
+      socket.on('command',function(data){
+        console.log(data.cmd);
+        if (data.cmd=='start'){
+          console.log('mostrar instruccion en header de jugadores');
+          socket.broadcast.emit('instruccion',{text:'Inicien'});
+
+          setTimeout(function(){
+            socket.broadcast.emit('instruccion',{text:'Pasar', token:prevToken});
+            console.log('Token actual: ' + prevToken);
+          },7000,'JavaScript');
+          
+        }
+        if (data.cmd=='pass'){
+          console.log('Turnos');
+          prevToken = nextToken(prevToken);
+          socket.broadcast.emit('instruccion',{text:'Pasar', token:prevToken});
+          console.log('Token actual: ' + prevToken);
+          for (let i in Jugadores){
+            Jugadores[i].print();
+          }
+        }
+        if (data.cmd=='finish'){
+          console.log('sumando');
+          //var suma = {JugadorA:'',JugadorB:'', JugadorC:'', JugadorD:''};
+          var suma =[];
+          for (let i in Jugadores){
+            console.log(Jugadores[i].suma());
+            suma.push(Jugadores[i].suma());
+          }
+
+          var cartas=[];
+          for (let i in Jugadores){
+            cartas.push(Jugadores[i].cartas());
+          }
+          socket.broadcast.emit('resultados',{suma:suma,cartas:cartas});
+        }
+        if (data.cmd=='reset'){
+          prevToken='A';
+          cartaDescarte=mecanicas.pick_random();
+          cartaMazo='' ;
+          descarteActivo=true;
+
+          // Se crean los objetos Jugadores junto con sus cartas
+          player1 = new mecanicas.Jugador("Player1","A");
+          player2 = new mecanicas.Jugador("Player2","B");
+          player3 = new mecanicas.Jugador("Player3","C");
+          player4 = new mecanicas.Jugador("Player4","D");
+
+          Jugadores = {A: player1,
+                       B: player2,
+                       C: player3,
+                       D: player4};
+        }
+      });
+    }
+    /////////////////////////////////////////////////////
+
+    else{
+    //Funciones para jugadores
+      console.log('Jugadores');
+      //Recibimos el id de la carta a mostrarse
+      socket.on('command', function(data){
+        var idJugador=data.cmd[0];
+        //idPosicion identifica a la carta
+        var idPosicion=data.cmd[2];
+        //buscamos la carta pedida
+        // Enviamos el valor de la carta pedida
+        socket.emit('commanda',{cmd:'mostrar', valor: Jugadores[idJugador].cards[idPosicion].valor});
+      });
+      // se recibe la señal para generar carta aleatoria en el mazo
+      socket.on('generar', function(data){
+        cartaMazo = mecanicas.pick_random();
+        console.log(cartaMazo);
+        var efecto = mecanicas.efectosCartas[cartaMazo];
+        console.log('Efecto: ' + efecto);
+        socket.emit('cartaMazo',{carta:cartaMazo, efecto: efecto});
+        //Los demás jugadores solo verán las cartas si no tienen efectos
+        if (efecto!='None'){
+          socket.broadcast.emit('cartaMazo',{carta:cartaMazo, efecto: efecto});
+        }else{
+          socket.broadcast.emit('cartaMazo',{carta:'Mazo', efecto: efecto});
+        }
+      });
+
+
+
+//Para actualizar las cartas visibles (Por si algun mensaje se perdió y hay incrongruencia en algun jugador)
+      socket.on('act', function(data){
+        console.log('recibido actualizacion');
+        var cartasAct={};
+        var temp=[];
+        for (let i in Jugadores['A'].cards){
+          if (Jugadores['A'].cards[i]=='None'){
+
+            temp[i-1]='o';
+          }else{
+            temp[i-1]='v';
+          }
+        }
+
+        cartasAct['A']=temp.slice();
+
+        for (let i in Jugadores['B'].cards){
+          if (Jugadores['B'].cards[i]=='None'){
+            temp[i-1]='o';
+          }else{
+            temp[i-1]='v';
+          }
+        }
+
+        cartasAct['B']=temp.slice();
+
+        for (let i in Jugadores['C'].cards){
+          if (Jugadores['C'].cards[i]=='None'){
+            temp[i-1]='o';
+          }else{
+            temp[i-1]='v';
+          }
+        }
+
+        cartasAct['C']=temp.slice();
+
+        for (let i in Jugadores['D'].cards){
+          if (Jugadores['D'].cards[i]=='None'){
+            temp[i-1]='o';
+          }else{
+            temp[i-1]='v';
+          }
+        }
+        cartasAct['D']=temp.slice();
+
+        socket.emit('actualizacion',cartasAct);
+
+      });
+
+      //Se recibe la señal para pasar de turno
+      /*socket.on('pasar', function(data){
+        var token = nextToken(data.prevToken);
+        console.log(token);
+        socket.broadcast.emit('instruccion',{text:'Pasar', token: token});
+        socket.emit('instruccion',{text:'Pasar', token: token});
+
+      });*/
+
+      //se recibe un mensaje {cmd:'cambiar', carta1: "id del boton", carta2: "id del boton"}
+      socket.on('cambio', function(data){
+        //Se puede cambiar entre 2 cartas, entre 1 carta y el mazo o entre 1 carta y el descarte
+        //Se obtiene el valor de la carta a partir de su ID
+        //data.carta1[0] es el codigo del jugador, data.carta1[2] es la posicion de la carta
+        var carta1 = Jugadores[data.carta1[0]].cards[data.carta1[2]].valor;
+        console.log('Valor de la carta1: '+ carta1);
+        if (data.carta2=='Descarte'){
+          var carta2= cartaDescarte;
+          Jugadores[data.carta1[0]].cards[data.carta1[2]].valor=carta2;
+
+          cartaDescarte=carta1;
+          //Enviamos los codigos de las cartas a los demás jugadores para que las pinten y las cambien
+          socket.broadcast.emit('pintar',{carta1:data.carta1, carta2:data.carta2, actDescarte:carta1});
+          socket.emit('pintar1',{carta1:data.carta1, carta2:data.carta2, actDescarte:carta1});
+          console.log('Descarte= ' + carta2);
+        }else if(data.carta2=='Mazo'){
+          //cartaMazo es la ultima carta generada del mazo
+          //Actualizamos el valor de la carta del jugador
+
+          Jugadores[data.carta1[0]].cards[data.carta1[2]].valor=cartaMazo;
+          console.log('valor cartaMazo: ' + cartaMazo);
+          cartaMazo='asd';
+          cartaDescarte=carta1;
+          //socket.broadcast.emit('actDescarteServ',{actDescarte:cartaDescarte});
+          //socket.emit('actDescarteServPropio',{actDescarte:cartaDescarte});
+          socket.broadcast.emit('pintar',{carta1:data.carta1, carta2:'Descarte', actDescarte:carta1});
+          socket.emit('pintar1',{carta1:data.carta1, carta2:'Descarte', actDescarte:carta1});
+
+        }
+        else{
+          //cambio entre 2 cartas
+          var carta2 = Jugadores[data.carta2[0]].cards[data.carta2[2]].valor;
+          Jugadores[data.carta1[0]].cards[data.carta1[2]].valor=carta2;
+          Jugadores[data.carta2[0]].cards[data.carta2[2]].valor=carta1;
+          socket.broadcast.emit('pintar',{carta1:data.carta1, carta2:data.carta2});
+        }
+        
+        console.log('enviando pintar');
+
+      });
+
+      socket.on('actualizarDescarte' , function(data){
+        cartaDescarte=data.actDescarte;
+        console.log('RecibidoDescarte');
+        socket.broadcast.emit('actDescarteServ', {actDescarte: cartaDescarte, cartaPintar: data.cartaPintar});
+      });
+      socket.on('pintarSoloUna', function(data){
+        socket.broadcast.emit('pintarSoloUna',{cartaPintar:data.cartaPintar});
+      });
+
+      // Se inicia la segunda parte del turno, en la cual los jugadores pueden descartar una carta
+      // Solo se puede descartar una carta por turno(Para este se coloca descarteActivo=true)
+      socket.on('pasar2fase', function(data){
+        socket.broadcast.emit('instruccion', {text:'segundaFase'});
+        socket.emit('instruccion', {text:'segundaFase'});
+        descarteActivo=true;
+
+
+        // Se inicia un temporizador con 5 segundos
+        setTimeout(function(){
+          prevToken = nextToken(prevToken);
+          socket.broadcast.emit('instruccion',{text:'Pasar', token:prevToken});
+          socket.emit('instruccion',{text:'Pasar', token:prevToken});
+          console.log('Token actual: ' + prevToken);
+          descarteActivo=false;
+        },5000,"JavaScript");
+        
+
+
+      });
+
+      socket.on('comparar', function(data){
+        //data.carta es el id de la carta
+        var cartaComp=Jugadores[data.carta[0]].cards[data.carta[2]];
+        console.log('recibidoComparar');
+        var valorCarta=cartaComp.valor;
+        // si descarteActivo es true se pueden comparar las cartas
+        // sino significa que alguien mas ya descartó
+        if (descarteActivo==true){
+          if (cartaDescarte==valorCarta){
+            descarteActivo=false;
+            console.log('cartasIguales');
+            //data.carta tiene esta forma: [letraID]_[posicion carta], ejem. A_2
+            if (data.idJugador[8]==data.carta[0]){
+              //Si la carta enviada a descarta es del mismo Jugador
+              Jugadores[data.idJugador[8]].deleteCard(data.carta[2]);
+              socket.emit('resComparar',{accion:'quitar', carta:data.carta});
+              socket.broadcast.emit('resComparar',{accion:'quitar', carta:data.carta});
+            }else{
+              //Si no es del mismo Jugador
+              socket.emit('resComparar',{accion:'pedirCarta',carta:data.carta});
+              socket.on('cartaEliminar', function(data){
+                var cartaPropia = Jugadores[data.carta[0]].cards[data.carta[2]].valor;
+
+                Jugadores[data.carta[0]].cards[data.carta[2]].valor=valorCarta;
+                cartaComp.valor=cartaPropia;
+
+
+
+                Jugadores[data.carta[0]].deleteCard(data.carta[2]);
+
+                //socket.emit('resComparar',{accion:'quitar', carta:data.carta});
+                socket.broadcast.emit('resComparar',{accion:'quitar', carta:data.carta});
+              });
+            }
+
+          } else{
+          //Si no son iguales las cartas
+            console.log('cartasNoIguales');
+          //data.carta tiene esta forma: [letraID]_[posicion carta], ejem. A_2
+            // Agregamos una carta mas al jugador
+            var posiciones = Jugadores[data.idJugador[8]].getPosiciones();
+            console.log(posiciones);
+            // Si aun no tiene 6 cartas
+            if (posiciones.length!=0){
+              //agregamos la carta
+              Jugadores[data.idJugador[8]].pushCard(posiciones[0]);
+              //Formamos el codigo de la carta
+              var codigoCarta=data.idJugador[8]+'_'+posiciones[0];
+              console.log(codigoCarta);
+              socket.emit('resComparar',{accion:'agregar', carta:codigoCarta});
+              socket.broadcast.emit('resComparar',{accion:'agregar', carta:codigoCarta});
+            }
+          }
+        }
+      });
+
+    }
+    ////////////////////////////////////////////////////////
+  });
+  //Atencion a peticion de poderes de los jugadores
+  socket.on('cmd_J', function(data){
+    console.log('comando jugador: ' + data.cmd);
+    if (data.cmd=='sumar'){
+      var respuesta =[];
+      for (let i in Jugadores){
+        console.log(Jugadores[i].suma());
+        respuesta.push(Jugadores[i].suma());
+      }
+    }
+    if (data.cmd=='ver_cartas'){
+      console.log('Viendo cartas');
+      var respuesta=[];
+        for (let i in Jugadores){
+          respuesta.push(Jugadores[i].cartas());
+        }
+    }
+    
+    socket.emit('res_power', {respuesta: respuesta});
+  });
+
+  socket.on('disconnect', function () {
+    console.log('User disconnected');
+  });
+});
+

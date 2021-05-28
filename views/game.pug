@@ -1,0 +1,180 @@
+extends layout
+
+
+block content
+
+  h1= title
+  - id= id
+  - ip= ip
+  - port= port
+  p#instruccion #{id}
+
+
+
+  - if (id=="Jugador_A")
+    - Jugador1= "C"
+    - Jugador2= "D"
+    - Jugador3= "B"
+    - Jugador4= "A"
+  - if (id=="Jugador_B")
+    - Jugador1= "D"
+    - Jugador2= "A"
+    - Jugador3= "C"
+    - Jugador4= "B"
+  - if (id=="Jugador_C")
+    - Jugador1= "A"
+    - Jugador2= "B"
+    - Jugador3= "D"
+    - Jugador4= "C"
+  - if (id=="Jugador_D")
+    - Jugador1= "B"
+    - Jugador2= "C"
+    - Jugador3= "A"
+    - Jugador4= "D"
+  - if (id=="Master_Game")
+    - Jugador1= "C"
+    - Jugador2= "D"
+    - Jugador3= "B"
+    - Jugador4= "A"
+
+
+  div.mesa
+    div.top
+      div.Jugador(id= `${Jugador1}`)
+        div.Cartas-Top
+          button.Carta(id=`${Jugador1}` + '_1')
+          button.Carta(id=`${Jugador1}` + '_2')
+          button.Carta(id=`${Jugador1}` + '_5')
+        div.Cartas-Bottom
+          button.Carta(id=`${Jugador1}` + '_3')
+          button.Carta(id=`${Jugador1}` + '_4')
+          button.Carta(id=`${Jugador1}` + '_6')
+    div.centro
+      div.Jugador(id=`${Jugador2}`)
+        div.Cartas-Top
+          button.Carta(id=`${Jugador2}` + '_1')
+          button.Carta(id=`${Jugador2}` + '_2')
+          button.Carta(id=`${Jugador2}` + '_5')
+        div.Cartas-Bottom
+          button.Carta(id=`${Jugador2}` + '_3')
+          button.Carta(id=`${Jugador2}` + '_4')
+          button.Carta(id=`${Jugador2}` + '_6')
+      div.mesa_centro
+        button.Carta#Mazo Mazo
+        button.Carta#Descarte Descarte
+      div.Jugador(id=`${Jugador3}`)
+        div.Cartas-Top
+          button.Carta(id=`${Jugador3}` + '_1')
+          button.Carta(id=`${Jugador3}` + '_2')
+          button.Carta(id=`${Jugador3}` + '_5')
+        div.Cartas-Bottom
+          button.Carta(id=`${Jugador3}` + '_3')
+          button.Carta(id=`${Jugador3}` + '_4')
+          button.Carta(id=`${Jugador3}` + '_6')
+    div.bottom
+      div.Jugador(id=`${Jugador4}`)
+        div.Cartas-Top
+          button.Carta(id=`${Jugador4}` + '_1')
+          button.Carta(id=`${Jugador4}` + '_2')
+          button.Carta(id=`${Jugador4}` + '_5')
+        div.Cartas-Bottom
+          button.Carta(id=`${Jugador4}` + '_3')
+          button.Carta(id=`${Jugador4}` + '_4')
+          button.Carta(id=`${Jugador4}` + '_6')
+
+
+
+  script.
+
+    var id ="#{id}";
+    var ip = "#{ip}";
+    var port = "#{port}";
+
+    var A1 = document.getElementById("A_1");
+    var A2 = document.getElementById("A_2");
+    var A3 = document.getElementById("A_3");
+    var A4 = document.getElementById("A_4");
+    var A5 = document.getElementById("A_5");
+    var A6 = document.getElementById("A_6");
+
+    var B1 = document.getElementById("B_1");
+    var B2 = document.getElementById("B_2");
+    var B3 = document.getElementById("B_3");
+    var B4 = document.getElementById("B_4");
+    var B5 = document.getElementById("B_5");
+    var B6 = document.getElementById("B_6");
+
+    var C1 = document.getElementById("C_1");
+    var C2 = document.getElementById("C_2");
+    var C3 = document.getElementById("C_3");
+    var C4 = document.getElementById("C_4");
+    var C5 = document.getElementById("C_5");
+    var C6 = document.getElementById("C_6");
+
+    var D1 = document.getElementById("D_1");
+    var D2 = document.getElementById("D_2");
+    var D3 = document.getElementById("D_3");
+    var D4 = document.getElementById("D_4");
+    var D5 = document.getElementById("D_5");
+    var D6 = document.getElementById("D_6");
+
+    var Mazo = document.getElementById('Mazo');
+    var Descarte = document.getElementById('Descarte');
+
+    var zonaNorte = document.getElementById('#{Jugador1}');
+    var zonaOeste = document.getElementById('#{Jugador2}');
+    var zonaEste = document.getElementById('#{Jugador3}');
+    var zonaSur = document.getElementById('#{Jugador4}');
+
+    var zonas = [zonaNorte, zonaEste, zonaOeste, zonaSur];
+
+
+    var arrayCartas = {CartasA:[A1,A2,A3,A4,A5,A6],
+      CartasB:[B1,B2,B3,B4,B5,B6],
+      CartasC:[C1,C2,C3,C4,C5,C6],
+      CartasD:[D1,D2,D3,D4,D5,D6]
+      };
+
+    //Un arreglo solo con las cartas propias
+    var cartasPropias= arrayCartas['Cartas'+id[8]];
+
+  //script(src="javascripts/script.js")
+
+  //<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>un 
+
+  //script(src="https://cdn.socket.io/socket.io-1.1.0.js")
+
+  //script(src="/socket.io/socket.io.js")
+    
+
+  
+  - if (id == "Master_Game")
+    //include includes/Game_master.html
+
+    fieldset
+      legend Comandos
+      input.cmd_MG#iniciar(type="submit", value="Iniciar")
+      input.cmd_MG#pasar(type="submit", value="Pasar")
+      input.cmd_MG#terminar(type="submit", value="Terminar")
+      input.cmd_MG#reset(type="submit", value="Reset")
+
+
+    script.
+      var iniciar = document.getElementById("iniciar");
+      var pasar = document.getElementById("pasar");
+      var terminar = document.getElementById("terminar");
+      var reset = document.getElementById("reset");
+  - else
+    div.cmd_J
+      button#pow_suma(value='sumar') Suma
+      button#pow_cartas(value='ver_cartas') Ver Cartas
+      button#actualizar(value="actualizar") Actualizar
+    p= id
+
+  
+  //script(src="/socket.io/socket.io.js")
+  //script(src="https://cdn.socket.io/socket.io-2.2.0.js")
+  script(src="/socket.io/socket.io.js")
+  script(src="javascripts/script.js")
+  //script(src="/javascripts/socket.js")
+  script(src="/javascripts/conexion.js")

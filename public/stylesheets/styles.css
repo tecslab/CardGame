@@ -1,0 +1,45 @@
+* {
+	box-sizing: border-box;
+}
+
+.mesa {
+	background: linear-gradient(to right, #f9f8f8 0%, #ffffff 100%);
+}
+
+.top, .bottom{
+	max-width: 90%;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+}
+/*Seccion de en medio: Jugador 2, centro y Jugador 3*/
+.centro {
+	display: flex;
+	justify-content: space-between;
+	padding: 0px 0px;
+}
+/*centro: seccion de Mazo y descarte*/
+.mesa_centro {
+	border-style: double;
+	margin: 30px 0px;
+	padding: 10px;
+}
+
+.Jugador{
+	max-width: 100%;
+	padding: 10px;
+}
+
+.Cartas-Top, .Cartas-Bottom {
+	padding:0px 0px;
+}
+
+.Carta{
+	padding: 35px 20px;
+	border-style: solid;
+	border-color: black;
+}
+
+#instruccion {
+	color: #F61010;
+}
